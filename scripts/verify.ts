@@ -16,6 +16,7 @@ import fs from 'fs';
 import path from 'path';
 import { verifyEmailNorbert } from './utils/api-clients.js';
 import { runStep, parseRunId, parseRunFolder, getDataDir, STEP_NAMES, type StepOutput } from './utils/step-runner.js';
+import { readCompanies } from './utils/io.js';
 
 const STEP_NUMBER = 11;
 const DEFAULT_INPUT = '10-with-emails.json';
@@ -89,7 +90,7 @@ async function main(): Promise<void> {
       const outputPath = path.join(dataDir, OUTPUT_FILE);
 
       console.log(`\n[verify] Reading: ${inputFile}`);
-      const companies: CompanyWithEmail[] = JSON.parse(fs.readFileSync(inputFile, 'utf-8'));
+      const { companies } = readCompanies<CompanyWithEmail>(inputFile);
 
       const withEmails = companies.filter(c => c.ceo_email);
       const withoutEmails = companies.filter(c => !c.ceo_email);

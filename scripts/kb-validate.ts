@@ -33,6 +33,7 @@ import {
   getEmbedProvider,
   type EmbedProvider,
 } from './utils/embeddings.js';
+import { readCompanies } from './utils/io.js';
 
 // Load .env from workspace
 dotenvConfig({ path: getEnvPath() });
@@ -158,8 +159,8 @@ async function main() {
       process.exit(1);
     }
 
-    const inputData: CompaniesInput = JSON.parse(fs.readFileSync(inputPath, 'utf-8'));
-    const companies = inputData.companies.map((c: NewCompany) => ({
+    const { companies: rawCompanies, raw: inputData } = readCompanies<NewCompany>(inputPath);
+    const companies = rawCompanies.map((c: NewCompany) => ({
       ...c,
       kb_score: 0,
       kb_match: 'moderate' as const,
@@ -188,8 +189,7 @@ async function main() {
   getKbDb();
   const ollamaUrl = getOllamaUrl();
 
-  const inputData: CompaniesInput = JSON.parse(fs.readFileSync(inputPath, 'utf-8'));
-  const { city, companies } = inputData;
+  const { city, companies } = readCompanies<NewCompany>(inputPath);
 
   const stats = getKbStats();
   console.log(`\nKB: ${stats.total} leads (${stats.good} good, ${stats.bad} bad), ${stats.embedded} embedded`);

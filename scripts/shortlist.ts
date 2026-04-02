@@ -12,6 +12,7 @@
 import fs from 'fs';
 import path from 'path';
 import { runStep, parseRunId, parseRunFolder, getDataDir, STEP_NAMES, type StepOutput } from './utils/step-runner.js';
+import { readCompanies } from './utils/io.js';
 
 const STEP_NUMBER = 5;
 const DEFAULT_INPUT = '3-new-companies.json';
@@ -27,6 +28,7 @@ interface ScoredCompany {
   source?: string;
   score?: number;
   prerank_score?: number;
+  agent_score?: number;
   match_type?: 'definite_target' | 'likely_target' | 'possible_target';
   filter_flags?: string[];
   [key: string]: unknown;
@@ -83,16 +85,17 @@ async function main(): Promise<void> {
       const outputPath = path.join(dataDir, OUTPUT_FILE);
 
       console.log(`\n[shortlist] Reading: ${inputFile}`);
-      const scored: ScoredCompany[] = JSON.parse(fs.readFileSync(inputFile, 'utf-8'));
+      const { companies: scored } = readCompanies<ScoredCompany>(inputFile);
       console.log(`[shortlist] Input: ${scored.length} companies, limit: ${limit}`);
 
       // Detect if prerank_score is present on any company
       const hasPrerankScore = scored.some(c => typeof c.prerank_score === 'number');
+      const hasAgentScore = scored.some(c => typeof c.agent_score === 'number');
       const hasScore = scored.some(c => typeof c.score === 'number');
 
       let sorted: ScoredCompany[];
 
-      if (hasPrerankScore || hasScore) {
+      if (hasPrerankScore || hasAgentScore || hasScore) {
         // Sort by: match_type priority desc, then score desc, then name asc
         sorted = [...scored].sort((a, b) => {
           const matchDiff = matchTypePriority(b.match_type) - matchTypePriority(a.match_type);
@@ -100,6 +103,7 @@ async function main(): Promise<void> {
 
           const getScore = (c: ScoredCompany) =>
             typeof c.prerank_score === 'number' ? c.prerank_score
+            : typeof c.agent_score === 'number' ? c.agent_score
             : typeof c.score === 'number' ? c.score
             : 0;
 
@@ -108,7 +112,7 @@ async function main(): Promise<void> {
 
           return (a.name ?? '').localeCompare(b.name ?? '');
         });
-        console.log(`[shortlist] Sorting by ${hasPrerankScore ? 'prerank_score' : 'score'} + match_type`);
+        console.log(`[shortlist] Sorting by ${hasPrerankScore ? 'prerank_score' : hasAgentScore ? 'agent_score' : 'score'} + match_type`);
       } else {
         // No score field — keep original order (agent may have already ordered them)
         sorted = [...scored];

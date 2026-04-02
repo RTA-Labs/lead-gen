@@ -32,6 +32,7 @@ import {
   ensureEmbedModel,
   getOllamaUrl,
 } from './utils/embeddings.js';
+import { readCompanies } from './utils/io.js';
 
 // Load .env from workspace
 dotenvConfig({ path: getEnvPath() });
@@ -101,8 +102,7 @@ async function main() {
     process.exit(1);
   }
 
-  const inputData: CompaniesInput = JSON.parse(fs.readFileSync(inputPath, 'utf-8'));
-  const { city, companies } = inputData;
+  const { city, companies, raw: inputData } = readCompanies<NewCompany>(inputPath);
 
   const outputPath = output ? path.resolve(output) : inputPath;
 

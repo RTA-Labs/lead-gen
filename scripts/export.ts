@@ -21,6 +21,7 @@ import type { Company } from './utils/db.js';
 import { getSkillOutputDir, getRunOutputDir, PATHS, ensureOutputDir } from './utils/paths.js';
 import { runStep, parseRunId, parseRunFolder, getDataDir, STEP_NAMES, markRunCompleted, type StepOutput } from './utils/step-runner.js';
 import { completeRun } from './utils/runs.js';
+import { readCompanies } from './utils/io.js';
 
 const STEP_NUMBER = 12;
 const DEFAULT_INPUT = '11-verified.json';
@@ -47,6 +48,7 @@ interface VerifiedCompany {
   hooks?: string;
   match_type?: string;
   score?: number;
+  agent_score?: number;
   thesis_score?: number;
   thesis_reasoning?: string;
   email_subject?: string;
@@ -156,7 +158,7 @@ async function main(): Promise<void> {
     { stepNumber: STEP_NUMBER, stepName: STEP_NAMES[STEP_NUMBER], runId, runFolder },
     async () => {
       console.log(`\n[export] Reading: ${inputFile}`);
-      const companies: VerifiedCompany[] = JSON.parse(fs.readFileSync(inputFile, 'utf-8'));
+      const { companies } = readCompanies<VerifiedCompany>(inputFile);
       console.log(`[export] Exporting ${companies.length} companies...`);
 
       // Ensure output dir exists — use run-specific output dir when available
@@ -191,7 +193,7 @@ async function main(): Promise<void> {
             industry: company.industry,
             hooks: company.hooks,
             match_type: normalizeMatchType(company.match_type),
-            thesis_score: company.thesis_score ?? (typeof company.score === 'number' ? company.score : undefined),
+            thesis_score: company.thesis_score ?? company.agent_score ?? (typeof company.score === 'number' ? company.score : undefined),
             thesis_reasoning: company.thesis_reasoning,
             email_subject: company.email_subject,
             email_body: company.email_body,
