@@ -34,7 +34,7 @@ const skillDir = getSkillDir();
 const nodeModulesPath = path.join(skillDir, 'node_modules');
 if (!fs.existsSync(nodeModulesPath)) {
   console.log('  Installing dependencies (npm install)...');
-  execFileSync('npm', ['install'], { cwd: skillDir, stdio: 'inherit' });
+  execFileSync('npm', ['ci'], { cwd: skillDir, stdio: 'inherit' });
   console.log('  Dependencies installed.');
 } else {
   console.log('  Dependencies already installed.');
